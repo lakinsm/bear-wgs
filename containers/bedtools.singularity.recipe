@@ -1,0 +1,27 @@
+Bootstrap: docker
+From: debian:jessie-slim
+
+
+%post
+    apt update \
+    && apt install -y --no-install-recommends build-essential \
+    ca-certificates \
+    wget \
+    python-minimal \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+    BEDTOOLS2_SOURCE="bedtools-2.26.0.tar.gz" \
+    BEDTOOLS2_VERSION="2.26.0" \
+    BEDTOOLS2_BIN="/opt/bedtools2/bin/*" \
+    BEDTOOLS2_DEST="/usr/local/bin"
+    wget https://github.com/arq5x/bedtools2/releases/download/v$BEDTOOLS2_VERSION/$BEDTOOLS2_SOURCE -O /opt/$BEDTOOLS2_SOURCE \
+    && tar -xvf /opt/$BEDTOOLS2_SOURCE -C /opt \
+    && cd /opt/bedtools2 \
+    && make \
+    && cp $BEDTOOLS2_BIN $BEDTOOLS2_DEST \
+    && rm /opt/$BEDTOOLS2_SOURCE
+
+
+%test
+    bedtools --help
+

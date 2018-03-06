@@ -1,0 +1,25 @@
+Bootstrap: docker
+From: debian:jessie-slim
+
+
+%post
+    apt update \
+    && apt install -y --no-install-recommends build-essential \
+    ca-certificates \
+    wget \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+    BWA_SOURCE="bwa-0.7.15.tar.bz2" \
+    BWA_VERSION="0.7.15" \
+    BWA_BIN="bwa" \
+    BWA_DEST="/usr/local/bin/bwa"
+    wget https://github.com/lh3/bwa/releases/download/v$BWA_VERSION/$BWA_SOURCE -O /opt/$BWA_SOURCE \
+    && tar -xvf /opt/$BWA_SOURCE -C /opt \
+    && cd /opt/bwa-$BWA_VERSION \
+    && make \
+    && ln -s /opt/bwa-$BWA_VERSION/$BWA_BIN $BWA_DEST \
+    && rm /opt/$BWA_SOURCE
+
+%test
+    which bwa
+
