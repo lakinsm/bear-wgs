@@ -2,7 +2,7 @@ Bootstrap: docker
 From: debian:jessie-slim
 
 
-%files prokka
+%files
     ../data/databases/Salmonella.tar.xz /opt
     ../data/databases/Plasmid.tar.xz /opt
 
