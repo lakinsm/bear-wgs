@@ -1,2 +1,3 @@
 #Singularity files
 containers/*.simg
+containers/recipes/*

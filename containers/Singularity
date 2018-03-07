@@ -2,26 +2,28 @@ Bootstrap: docker
 From: debian:jessie-slim
 
 
-%runscript
-    echo "Hello world"
+%files prokka
+    ../data/databases/Salmonella.tar.xz /opt
+    ../data/databases/Plasmid.tar.xz /opt
 
 
 %post
-    apt-get update
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
-    echo "deb http://cran.rstudio.com/bin/linux/ubuntu artful/" >> /etc/apt/sources.list
-    apt-get update && apt-get install -y --no-install-recommends \
+    apt-get update \
+    && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
-    python-minimal \
+    git \
     wget \
+    unzip \
     zlib1g-dev \
     libbz2-dev \
     liblzma-dev \
     libncurses-dev \
     ncbi-blast+ \
     gcc \
+    openjdk-7-jre \
     python-dev \
+    python-pip \
     python3-dev \
     python3-pip \
     python-numpy \
@@ -31,12 +33,16 @@ From: debian:jessie-slim
     libpng-dev \
     pkg-config \
     dh-autoreconf \
-    pkg-config \
     tabix \
+    libdatetime-perl \
+    libxml-simple-perl \
+    libdigest-md5-perl \
+    bioperl \
+    xz-utils \
     && apt-get update \
     && rm -rf /var/lib/apt/lists/*
     pip3 install requests
-    pip3 install multiqc=="1.0"
+    pip install multiqc=="1.0"
 
     
 #################
@@ -53,6 +59,7 @@ From: debian:jessie-slim
     && make \
     && cp $BEDTOOLS2_BIN $BEDTOOLS2_DEST \
     && rm /opt/$BEDTOOLS2_SOURCE
+    cd /
 
 
 #################
@@ -69,6 +76,7 @@ From: debian:jessie-slim
     && make \
     && ln -s /opt/bwa-$BWA_VERSION/$BWA_BIN $BWA_DEST \
     && rm /opt/$BWA_SOURCE
+    cd /
 
 
 #################
@@ -81,39 +89,52 @@ From: debian:jessie-slim
     && chmod 755 /opt/FastQC/fastqc \
     && ln -s /opt/FastQC/fastqc /usr/local/bin/fastqc \
     && rm /opt/$FASTQC_BIN
+    cd /
 
 
 #################
 ## Freebayes
 #################
 %appinstall freebayes
-    wget https://github.com/ekg/freebayes/archive/v1.1.0.tar.gz -O /opt/freebayes_v1.1.0.tar.gz \
-    && tar -xzf /opt/freebayes_v1.1.0.tar.gz \
-    && cd freebayes-1.1.0 \
+    cd /opt
+    git clone --recursive https://github.com/ekg/freebayes.git \
+    && cd freebayes \
     && make \
-    && make install \
-    && rm /opt/freebayes_v1.1.0.tar.gz
+    && make install
+    cd /
+
+
+#################
+## Prokka
+#################
+%appinstall prokka
+    cd /opt
+  	git clone git://github.com/tseemann/prokka.git
+  	mv /opt/Plasmid.tar.xz /opt/prokka/db/genus/
+  	mv /opt/Salmonella.tar.xz /opt/prokka/db/genus/
+  	xz -d /opt/prokka/db/genus/Plasmid.tar.xz
+  	xz -d /opt/prokka/db/genus/Salmonella.tar.xz
+  	tar -xvf /opt/prokka/db/genus/Plasmid.tar -C /opt/prokka/db/genus/
+  	tar -xvf /opt/prokka/db/genus/Salmonella.tar -C /opt/prokka/db/genus/
+  	rm /opt/prokka/db/genus/Plasmid.tar
+  	rm /opt/prokka/db/genus/Salmonella.tar
+  	/opt/prokka/bin/prokka --setupdb
+    ln -s /opt/prokka/bin/* /usr/bin/
+    cd /
 
 
 #################
 ## QUAST
 #################
 %appinstall quast
-    QUAST_SOURCE="quast_4.5.tar.gz" \
+    QUAST_SOURCE="quast_4.5.tar.gz"
     QUAST_VERSION="quast_4.5"
     wget https://github.com/ablab/quast/archive/$QUAST_SOURCE -O /opt/$QUAST_SOURCE \
     && tar -xvf /opt/$QUAST_SOURCE -C /opt \
     && cd /opt/quast-$QUAST_VERSION \
     && ./setup.py install \
     && rm /opt/$QUAST_SOURCE
-    
-
-#################
-## R Scripts
-#################
-%appinstall rscripts
-    echo 'install.packages(c("data.table", "reshape2", "ggplot2"), repos="http://cran.us.r-project.org", dependencies=TRUE)' > /tmp/packages.R \
-&& Rscript /tmp/packages.R
+    cd /
 
 
 #################
@@ -131,6 +152,7 @@ From: debian:jessie-slim
     && make \
     && ln -s /opt/samtools-$SAMTOOLS_VERSION/$SAMTOOLS_BIN $SAMTOOLS_DEST \
     && rm /opt/$SAMTOOLS_SOURCE
+    cd /
 
 
 #################
@@ -146,6 +168,7 @@ From: debian:jessie-slim
     && cd /opt/SPAdes-$SPADES_VERSION-Linux \
     && ln -s /opt/SPAdes-$SPADES_VERSION-Linux/$SPADES_BIN $SPADES_DEST \
     && rm /opt/$SPADES_SOURCE
+    cd /
 
 
 #################
@@ -157,6 +180,7 @@ From: debian:jessie-slim
     wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.36.zip -O /opt/trimmomatic.zip && \
     unzip /opt/trimmomatic.zip -d /opt/ && \
     rm /opt/trimmomatic.zip
+    cd /
 
 
 #################
@@ -176,4 +200,5 @@ From: debian:jessie-slim
     && make \
     && ln -s /opt/vcftools-$VCF_VERSION/$VCF_BIN $VCF_DEST \
     && rm /opt/$VCF_SOURCE
+    cd /
 
