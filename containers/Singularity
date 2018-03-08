@@ -1,0 +1,204 @@
+Bootstrap: docker
+From: debian:jessie-slim
+
+
+%files
+    ../data/databases/Salmonella.tar.xz /opt
+    ../data/databases/Plasmid.tar.xz /opt
+
+
+%post
+    apt-get update \
+    && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    git \
+    wget \
+    unzip \
+    zlib1g-dev \
+    libbz2-dev \
+    liblzma-dev \
+    libncurses-dev \
+    ncbi-blast+ \
+    gcc \
+    openjdk-7-jre \
+    python-dev \
+    python-pip \
+    python3-dev \
+    python3-pip \
+    python-numpy \
+    python-matplotlib \
+    python-setuptools \
+    libfreetype6-dev \
+    libpng-dev \
+    pkg-config \
+    dh-autoreconf \
+    tabix \
+    libdatetime-perl \
+    libxml-simple-perl \
+    libdigest-md5-perl \
+    bioperl \
+    xz-utils \
+    && apt-get update \
+    && rm -rf /var/lib/apt/lists/*
+    pip3 install requests
+    pip install multiqc=="1.0"
+
+    
+#################
+## Bedtools2
+#################
+%appinstall bedtools2
+    BEDTOOLS2_SOURCE="bedtools-2.26.0.tar.gz" \
+    BEDTOOLS2_VERSION="2.26.0" \
+    BEDTOOLS2_BIN="/opt/bedtools2/bin/*" \
+    BEDTOOLS2_DEST="/usr/local/bin"
+    wget https://github.com/arq5x/bedtools2/releases/download/v$BEDTOOLS2_VERSION/$BEDTOOLS2_SOURCE -O /opt/$BEDTOOLS2_SOURCE \
+    && tar -xvf /opt/$BEDTOOLS2_SOURCE -C /opt \
+    && cd /opt/bedtools2 \
+    && make \
+    && cp $BEDTOOLS2_BIN $BEDTOOLS2_DEST \
+    && rm /opt/$BEDTOOLS2_SOURCE
+    cd /
+
+
+#################
+## BWA
+#################
+%appinstall bwa
+    BWA_SOURCE="bwa-0.7.15.tar.bz2" \
+    BWA_VERSION="0.7.15" \
+    BWA_BIN="bwa" \
+    BWA_DEST="/usr/local/bin/bwa"
+    wget https://github.com/lh3/bwa/releases/download/v$BWA_VERSION/$BWA_SOURCE -O /opt/$BWA_SOURCE \
+    && tar -xvf /opt/$BWA_SOURCE -C /opt \
+    && cd /opt/bwa-$BWA_VERSION \
+    && make \
+    && ln -s /opt/bwa-$BWA_VERSION/$BWA_BIN $BWA_DEST \
+    && rm /opt/$BWA_SOURCE
+    cd /
+
+
+#################
+## FASTQC
+#################
+%appinstall fastqc
+    FASTQC_BIN="fastqc_v0.11.5.zip"
+    wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/$FASTQC_BIN -O /opt/$FASTQC_BIN \
+    && unzip /opt/$FASTQC_BIN -d /opt/ \
+    && chmod 755 /opt/FastQC/fastqc \
+    && ln -s /opt/FastQC/fastqc /usr/local/bin/fastqc \
+    && rm /opt/$FASTQC_BIN
+    cd /
+
+
+#################
+## Freebayes
+#################
+%appinstall freebayes
+    cd /opt
+    git clone --recursive https://github.com/ekg/freebayes.git \
+    && cd freebayes \
+    && make \
+    && make install
+    cd /
+
+
+#################
+## Prokka
+#################
+%appinstall prokka
+    cd /opt
+  	git clone git://github.com/tseemann/prokka.git
+  	mv /opt/Plasmid.tar.xz /opt/prokka/db/genus/
+  	mv /opt/Salmonella.tar.xz /opt/prokka/db/genus/
+  	xz -d /opt/prokka/db/genus/Plasmid.tar.xz
+  	xz -d /opt/prokka/db/genus/Salmonella.tar.xz
+  	tar -xvf /opt/prokka/db/genus/Plasmid.tar -C /opt/prokka/db/genus/
+  	tar -xvf /opt/prokka/db/genus/Salmonella.tar -C /opt/prokka/db/genus/
+  	rm /opt/prokka/db/genus/Plasmid.tar
+  	rm /opt/prokka/db/genus/Salmonella.tar
+  	/opt/prokka/bin/prokka --setupdb
+    ln -s /opt/prokka/bin/* /usr/bin/
+    cd /
+
+
+#################
+## QUAST
+#################
+%appinstall quast
+    QUAST_SOURCE="quast_4.5.tar.gz"
+    QUAST_VERSION="quast_4.5"
+    wget https://github.com/ablab/quast/archive/$QUAST_SOURCE -O /opt/$QUAST_SOURCE \
+    && tar -xvf /opt/$QUAST_SOURCE -C /opt \
+    && cd /opt/quast-$QUAST_VERSION \
+    && ./setup.py install \
+    && rm /opt/$QUAST_SOURCE
+    cd /
+
+
+#################
+## Samtools
+#################
+%appinstall samtools
+    SAMTOOLS_SOURCE="samtools-1.4.1.tar.bz2" \
+    SAMTOOLS_VERSION="1.4.1" \
+    SAMTOOLS_BIN="samtools" \
+    SAMTOOLS_DEST="/usr/local/bin/samtools"
+    wget https://github.com/samtools/samtools/releases/download/$SAMTOOLS_VERSION/$SAMTOOLS_SOURCE -O /opt/$SAMTOOLS_SOURCE \
+    && tar -xvf /opt/$SAMTOOLS_SOURCE -C /opt \
+    && cd /opt/samtools-$SAMTOOLS_VERSION \
+    && ./configure \
+    && make \
+    && ln -s /opt/samtools-$SAMTOOLS_VERSION/$SAMTOOLS_BIN $SAMTOOLS_DEST \
+    && rm /opt/$SAMTOOLS_SOURCE
+    cd /
+
+
+#################
+## SPAdes
+#################
+%appinstall spades
+    SPADES_SOURCE="SPAdes-3.10.1-Linux.tar.gz" \
+    SPADES_VERSION="3.10.1" \
+    SPADES_BIN="bin/spades.py" \
+    SPADES_DEST="/usr/local/bin/spades.py"
+    wget https://github.com/ablab/spades/releases/download/v$SPADES_VERSION/$SPADES_SOURCE -O /opt/$SPADES_SOURCE \
+    && tar -xvf /opt/$SPADES_SOURCE -C /opt \
+    && cd /opt/SPAdes-$SPADES_VERSION-Linux \
+    && ln -s /opt/SPAdes-$SPADES_VERSION-Linux/$SPADES_BIN $SPADES_DEST \
+    && rm /opt/$SPADES_SOURCE
+    cd /
+
+
+#################
+## Trimmomatic
+#################
+%appinstall trimmomatic
+    TRIMMOMATIC_SOURCE="Trimmomatic-0.36.zip" \
+    TRIMMOMATIC_HOME="/opt/trimmomatic"
+    wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.36.zip -O /opt/trimmomatic.zip && \
+    unzip /opt/trimmomatic.zip -d /opt/ && \
+    rm /opt/trimmomatic.zip
+    cd /
+
+
+#################
+## VCFTools
+#################
+%appinstall vcftools
+    VCF_SOURCE="vcftools-0.1.15.tar.gz" \
+    VCF_VERSION="0.1.15" \
+    VCF_BIN="src/cpp/vcftools" \
+    VCF_DEST="/usr/local/bin/vcftools" \
+    PERL5LIB="/opt/vcftools-$VCF_VERSION/src/perl/"
+    wget https://github.com/vcftools/vcftools/releases/download/v$VCF_VERSION/$VCF_SOURCE -O /opt/$VCF_SOURCE \
+    && tar -xvf /opt/$VCF_SOURCE -C /opt \
+    && cd /opt/vcftools-$VCF_VERSION \
+    && ./autogen.sh \
+    && ./configure \
+    && make \
+    && ln -s /opt/vcftools-$VCF_VERSION/$VCF_BIN $VCF_DEST \
+    && rm /opt/$VCF_SOURCE
+    cd /
+
