@@ -1,0 +1,23 @@
+Bootstrap: docker
+From: alpine:3.6
+
+
+%post
+    apk --update add \
+    ca-certificates \
+    g++ \
+    make \
+    gcc \
+    python \
+    python-dev \
+    py-pip \
+    py-setuptools \
+    freetype-dev \
+    libpng-dev \
+    pkgconfig
+    pip install numpy matplotlib multiqc=="1.0"
+
+
+%test
+    multiqc --help
+

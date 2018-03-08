@@ -1,0 +1,16 @@
+Bootstrap: docker
+From: debian:jessie-slim
+
+
+%post
+    apt update \
+    && apt install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    ncbi-blast+ \
+    && rm -rf /var/lib/apt/lists/*
+
+
+%test
+    which makeblastdb
+

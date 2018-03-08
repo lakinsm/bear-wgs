@@ -1,0 +1,24 @@
+Bootstrap: docker
+From: debian:jessie-slim
+
+
+%post
+    apt update \
+    && apt install -y --no-install-recommends \
+    ca-certificates \
+    python-dev \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+    SPADES_SOURCE="SPAdes-3.10.1-Linux.tar.gz" \
+    SPADES_VERSION="3.10.1" \
+    SPADES_BIN="bin/spades.py" \
+    SPADES_DEST="/usr/local/bin/spades.py"
+    wget https://github.com/ablab/spades/releases/download/v$SPADES_VERSION/$SPADES_SOURCE -O /opt/$SPADES_SOURCE \
+    && tar -xvf /opt/$SPADES_SOURCE -C /opt \
+    && cd /opt/SPAdes-$SPADES_VERSION-Linux \
+    && ln -s /opt/SPAdes-$SPADES_VERSION-Linux/$SPADES_BIN $SPADES_DEST \
+    && rm /opt/$SPADES_SOURCE
+
+
+%test
+    which spades.py

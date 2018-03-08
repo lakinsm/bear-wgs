@@ -1,0 +1,18 @@
+Bootstrap: docker
+From: debian:jessie-slim
+
+
+%post
+    apt update \
+    && apt install -y --no-install-recommends \
+    ca-certificates \
+    openjdk-7-jre \
+    wget \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+    TRIMMOMATIC_SOURCE="Trimmomatic-0.36.zip" \
+    TRIMMOMATIC_HOME="/opt/trimmomatic"
+    wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.36.zip -O /opt/trimmomatic.zip && \
+    unzip /opt/trimmomatic.zip -d /opt/ && \
+    rm /opt/trimmomatic.zip
+

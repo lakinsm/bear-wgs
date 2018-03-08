@@ -1,0 +1,39 @@
+Bootstrap: docker
+From: debian:jessie-slim
+
+
+%files
+    ../data/databases/Salmonella.tar.xz /opt
+    ../data/databases/Plasmid.tar.xz /opt
+
+
+%post
+    apt update \
+    && apt install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    libdatetime-perl \
+    libxml-simple-perl \
+    libdigest-md5-perl \
+    bioperl \
+    git \
+    zlib1g-dev \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+    cd /opt
+  	git clone git://github.com/tseemann/prokka.git
+  	mv /opt/Plasmid.tar.xz /opt/prokka/db/genus/
+  	mv /opt/Salmonella.tar.xz /opt/prokka/db/genus/
+  	xz -d /opt/prokka/db/genus/Plasmid.tar.xz
+  	xz -d /opt/prokka/db/genus/Salmonella.tar.xz
+  	tar -xvf /opt/prokka/db/genus/Plasmid.tar -C /opt/prokka/db/genus/
+  	tar -xvf /opt/prokka/db/genus/Salmonella.tar -C /opt/prokka/db/genus/
+  	rm /opt/prokka/db/genus/Plasmid.tar
+  	rm /opt/prokka/db/genus/Salmonella.tar
+  	/opt/prokka/bin/prokka --setupdb
+    ln -s /opt/prokka/bin/* /usr/bin/
+    cd /
+    
+    
+    
+

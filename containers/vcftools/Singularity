@@ -1,0 +1,29 @@
+Bootstrap: docker
+From: debian:jessie-slim
+
+
+%post
+    apt update \
+    && apt install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    dh-autoreconf \
+    pkg-config \
+    tabix \
+    wget \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+    VCF_SOURCE="vcftools-0.1.15.tar.gz" \
+    VCF_VERSION="0.1.15" \
+    VCF_BIN="src/cpp/vcftools" \
+    VCF_DEST="/usr/local/bin/vcftools" \
+    PERL5LIB="/opt/vcftools-$VCF_VERSION/src/perl/"
+    wget https://github.com/vcftools/vcftools/releases/download/v$VCF_VERSION/$VCF_SOURCE -O /opt/$VCF_SOURCE \
+    && tar -xvf /opt/$VCF_SOURCE -C /opt \
+    && cd /opt/vcftools-$VCF_VERSION \
+    && ./autogen.sh \
+    && ./configure \
+    && make \
+    && ln -s /opt/vcftools-$VCF_VERSION/$VCF_BIN $VCF_DEST \
+    && rm /opt/$VCF_SOURCE
+
