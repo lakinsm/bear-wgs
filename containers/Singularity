@@ -5,6 +5,7 @@ From: debian:jessie-slim
 %files
     ../data/databases/Salmonella.tar.xz /opt
     ../data/databases/Plasmid.tar.xz /opt
+    ../data/databases/Efaecalis.tar.xz /opt
 
 
 %post
@@ -43,12 +44,9 @@ From: debian:jessie-slim
     && rm -rf /var/lib/apt/lists/*
     pip3 install requests
     pip install multiqc=="1.0"
-
-    
-#################
-## Bedtools2
-#################
-%appinstall bedtools2
+    cd /usr/local/bin
+    ln -s /usr/lib/jvm/java-7-openjdk-amd64/bin/java ./java
+    cd /
     BEDTOOLS2_SOURCE="bedtools-2.26.0.tar.gz" \
     BEDTOOLS2_VERSION="2.26.0" \
     BEDTOOLS2_BIN="/opt/bedtools2/bin/*" \
@@ -60,12 +58,6 @@ From: debian:jessie-slim
     && cp $BEDTOOLS2_BIN $BEDTOOLS2_DEST \
     && rm /opt/$BEDTOOLS2_SOURCE
     cd /
-
-
-#################
-## BWA
-#################
-%appinstall bwa
     BWA_SOURCE="bwa-0.7.15.tar.bz2" \
     BWA_VERSION="0.7.15" \
     BWA_BIN="bwa" \
@@ -77,12 +69,6 @@ From: debian:jessie-slim
     && ln -s /opt/bwa-$BWA_VERSION/$BWA_BIN $BWA_DEST \
     && rm /opt/$BWA_SOURCE
     cd /
-
-
-#################
-## FASTQC
-#################
-%appinstall fastqc
     FASTQC_BIN="fastqc_v0.11.5.zip"
     wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/$FASTQC_BIN -O /opt/$FASTQC_BIN \
     && unzip /opt/$FASTQC_BIN -d /opt/ \
@@ -90,43 +76,29 @@ From: debian:jessie-slim
     && ln -s /opt/FastQC/fastqc /usr/local/bin/fastqc \
     && rm /opt/$FASTQC_BIN
     cd /
-
-
-#################
-## Freebayes
-#################
-%appinstall freebayes
     cd /opt
     git clone --recursive https://github.com/ekg/freebayes.git \
     && cd freebayes \
     && make \
     && make install
     cd /
-
-
-#################
-## Prokka
-#################
-%appinstall prokka
     cd /opt
   	git clone git://github.com/tseemann/prokka.git
   	mv /opt/Plasmid.tar.xz /opt/prokka/db/genus/
   	mv /opt/Salmonella.tar.xz /opt/prokka/db/genus/
+  	mv /opt/Efaecalis.tar.xz /opt/prokka/db/genus/
   	xz -d /opt/prokka/db/genus/Plasmid.tar.xz
   	xz -d /opt/prokka/db/genus/Salmonella.tar.xz
+  	xz -d /opt/prokka/db/genus/Efaecalis.tar.xz
   	tar -xvf /opt/prokka/db/genus/Plasmid.tar -C /opt/prokka/db/genus/
   	tar -xvf /opt/prokka/db/genus/Salmonella.tar -C /opt/prokka/db/genus/
+  	tar -xvf /opt/prokka/db/genus/Efaecalis.tar -C /opt/prokka/db/genus/
   	rm /opt/prokka/db/genus/Plasmid.tar
   	rm /opt/prokka/db/genus/Salmonella.tar
+  	rm /opt/prokka/db/genus/Efaecalis.tar
   	/opt/prokka/bin/prokka --setupdb
     ln -s /opt/prokka/bin/* /usr/bin/
     cd /
-
-
-#################
-## QUAST
-#################
-%appinstall quast
     QUAST_SOURCE="quast_4.5.tar.gz"
     QUAST_VERSION="quast_4.5"
     wget https://github.com/ablab/quast/archive/$QUAST_SOURCE -O /opt/$QUAST_SOURCE \
@@ -135,12 +107,6 @@ From: debian:jessie-slim
     && ./setup.py install \
     && rm /opt/$QUAST_SOURCE
     cd /
-
-
-#################
-## Samtools
-#################
-%appinstall samtools
     SAMTOOLS_SOURCE="samtools-1.4.1.tar.bz2" \
     SAMTOOLS_VERSION="1.4.1" \
     SAMTOOLS_BIN="samtools" \
@@ -153,12 +119,6 @@ From: debian:jessie-slim
     && ln -s /opt/samtools-$SAMTOOLS_VERSION/$SAMTOOLS_BIN $SAMTOOLS_DEST \
     && rm /opt/$SAMTOOLS_SOURCE
     cd /
-
-
-#################
-## SPAdes
-#################
-%appinstall spades
     SPADES_SOURCE="SPAdes-3.10.1-Linux.tar.gz" \
     SPADES_VERSION="3.10.1" \
     SPADES_BIN="bin/spades.py" \
@@ -169,24 +129,12 @@ From: debian:jessie-slim
     && ln -s /opt/SPAdes-$SPADES_VERSION-Linux/$SPADES_BIN $SPADES_DEST \
     && rm /opt/$SPADES_SOURCE
     cd /
-
-
-#################
-## Trimmomatic
-#################
-%appinstall trimmomatic
     TRIMMOMATIC_SOURCE="Trimmomatic-0.36.zip" \
     TRIMMOMATIC_HOME="/opt/trimmomatic"
     wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.36.zip -O /opt/trimmomatic.zip && \
     unzip /opt/trimmomatic.zip -d /opt/ && \
     rm /opt/trimmomatic.zip
     cd /
-
-
-#################
-## VCFTools
-#################
-%appinstall vcftools
     VCF_SOURCE="vcftools-0.1.15.tar.gz" \
     VCF_VERSION="0.1.15" \
     VCF_BIN="src/cpp/vcftools" \

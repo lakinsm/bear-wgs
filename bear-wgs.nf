@@ -4,13 +4,13 @@ if( params.help ) {
     return help()
 }
 
-if( !nextflow.version.matches('0.25+) ) {
+if( !nextflow.version.matches('0.25+') ) {
     return nextflow_version_error()
 }
 
-if( params.index ) {
-    index = Channel.fromPath(params.index).toSortedList()
-    if( !index.exists() ) return index_error(index)
+if( params.reference ) {
+    reference = file(params.reference)
+    if( !reference.exists() ) return reference_error(reference)
 }
 
 if( params.adapters ) {
@@ -31,14 +31,12 @@ trailing = params.trailing
 slidingwindow = params.slidingwindow
 minlen = params.minlen
 
-min_contig = params.min_contig
-
 Channel
     .fromFilePairs( params.reads, flat: true )
     .ifEmpty { return fastq_error(params.reads) }
     .into { read_pairs; fastqc_pairs }
 
-process RunFastQC {
+process FastQC {
     tag { dataset_id }
     
     publishDir "${params.output}/QualityMetrics", mode: "symlink"
@@ -56,7 +54,7 @@ process RunFastQC {
     """
 }
 
-process RunQC {
+process QualityControl {
     tag { dataset_id }
     
     publishDir "${params.output}/QualityControlOutput", mode: "symlink",
@@ -71,12 +69,12 @@ process RunQC {
         set dataset_id, file(forward), file(reverse) from read_pairs
     
     output:
-        set dataset_id, file("${dataset_id}.1P.fastq"), file("${dataset_id}.2P.fastq") into (paired_fastq)
+        set dataset_id, file("${dataset_id}.1P.fastq"), file("${dataset_id}.2P.fastq") into (paired_fastq_alignment, paired_fastq_assembly)
         set dataset_id, file("${dataset_id}.1U.fastq"), file("${dataset_id}.2U.fastq") into (unpaired_fastq)
         set dataset_id, file("${dataset_id}.trimmomatic.stats.log") into (trimmomatic_logs)
     
     """
-    java -jar ${TRIMMOMATIC}/trimmomatic-0.36.jar \
+    /usr/lib/jvm/java-7-openjdk-amd64/bin/java -jar ${TRIMMOMATIC}/trimmomatic-0.36.jar \
         PE \
         -threads ${threads} \
         $forward $reverse -baseout ${dataset_id} \
@@ -85,7 +83,7 @@ process RunQC {
         TRAILING:${trailing} \
         SLIDINGWINDOW:${slidingwindow} \
         MINLEN:${minlen} \
-        2> ${dataset_id.trimmomatic.stats.log}
+        2> ${dataset_id}.trimmomatic.stats.log
     
     mv ${dataset_id}_1P ${dataset_id}.1P.fastq
     mv ${dataset_id}_2P ${dataset_id}.2P.fastq
@@ -94,50 +92,50 @@ process RunQC {
     """
 }
 
-if( !params.index ) {
-    process BuildHostIndex {
-        tag { host.baseName }
-        
-        publishDir "${params.output}/BuildHostIndex", mode: "symlink"
-        
-        input:
-            file(host)
-        
-        output:
-            file '*' into index
-        
-        """
-        bwa index ${host}
-        """
-    }
+process BuildReferenceIndex {
+    tag { reference.baseName }
+    
+    publishDir "${params.output}/BuildReferenceIndex", mode: "symlink"
+    
+    input:
+        file(reference)
+    
+    output:
+        file 'genome.index*' into index
+    
+    """
+    bwa index -p genome.index ${reference}
+    """
 }
 
 process AlignReadsToGenome {
-    tag { host.baseName }
+    tag { dataset_id }
     
-    publishDir "${params.output}/AligendGenomes", mode: "symlink"
+    publishDir "${params.output}/AlignedFiles", mode: "symlink"
     
     input:
-        set dataset_id, file(forward), file(reverse) from paired_fastq
+        set dataset_id, file(forward), file(reverse) from paired_fastq_alignment
+        file ref_index from index.first()
     
     output:
-        set dataset_id, file("${dataset_id}.sam") into genome_sam
+        set dataset_id, file("${dataset_id}.aligned.sam") into genome_sam
     
     """
-    bwa mem ${host} ${forward} ${reverse} -t ${threads} > ${dataset_id}.host.sam
+    bwa mem genome.index ${forward} ${reverse} -t ${threads} > ${dataset_id}.aligned.sam
     """
 }
 
 process AssembleReads {
     tag { dataset_id }
     
-    publishDir "${params.output}/AssembledGenomes", mode: "symlink"
+    publishDir "${params.output}/AssembledFiles", mode: "symlink"
     
     input:
-        set dataset_id, file(forward), file(reverse) from paired_fastq
+        set dataset_id, file(forward), file(reverse) from paired_fastq_assembly
     
     output:
         set dataset_id, file("${dataset_id}.contigs.fa") into (spades_contigs)
+        set dataset_id, file("${dataset_id}.graph.fastg") into (spades_graphs)
     
     script:
     """
@@ -147,7 +145,8 @@ process AssembleReads {
         -1 ${forward} \
         -2 ${reverse} \
         -o output
-    mv output/contigs.fasta .
+    mv output/contigs.fasta ./${dataset_id}.contigs.fa
+    mv output/assembly_graph.fastg ./${dataset_id}.graph.fastg
     """
 }
 
@@ -180,9 +179,9 @@ def fastq_error(def input) {
     return 1
 }
 
-def index_error(def input) {
+def reference_error(def input) {
     println ""
-    println "[params.index] fail to open: '" + input + "' : No such file or directory"
+    println "[params.reference] fail to open: '" + reference + "' : No such file or directory"
     println ""
     return 1
 }
@@ -192,15 +191,15 @@ def help() {
     println "Program: bear-wgs"
     println "Version: $workflow.repository - $workflow.revision [$workflow.commitId]"
     println "Documentation: https://github.com/lakinsm/bear-wgs"
-    println "Contact: Steven Lakin <steven.m.lakin@gmail.com"
+    println "Contact: Steven Lakin <steven.m.lakin@gmail.com>"
     println ""
-    println "Usage:    nextflow run bear-wgs.nf [options]"
+    println "Usage:    nextflow bear-wgs.nf [options]"
     println ""
     println "Input/output options:"
     println ""
     println "    --reads         STR      path to FASTQ formatted input sequences"
     println "    --adapters      STR      path to FASTA formatted adapter sequences"
-    println "    --index         STR      path to BWA generated index files"
+    println "    --reference     STR      path to reference genome FASTA file"
     println "    --output        STR      directory to write process outputs to"
     println ""
     println "Trimming options:"
