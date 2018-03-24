@@ -1,3 +1,8 @@
 #Singularity files
 containers/*.simg
 containers/recipes/*
+
+#Nextflow files
+.nextflow/*
+.nextflow*
+work/*

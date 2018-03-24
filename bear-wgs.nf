@@ -48,7 +48,7 @@ process FastQC {
         set dataset_id, file("*_fastqc.zip") into (fastqc_logs)
     
     """
-    mkdir output
+    mkdir output   
     fastqc -f fastq ${forward} ${reverse} -t ${threads} -o output
     mv output/*.zip .
     """
@@ -69,7 +69,7 @@ process QualityControl {
         set dataset_id, file(forward), file(reverse) from read_pairs
     
     output:
-        set dataset_id, file("${dataset_id}.1P.fastq"), file("${dataset_id}.2P.fastq") into (paired_fastq_alignment, paired_fastq_assembly)
+        set dataset_id, file("${dataset_id}.1P.fastq"), file("${dataset_id}.2P.fastq") into (paired_fastq_alignment, paired_fastq_assembly, paired_fastq_ariba)
         set dataset_id, file("${dataset_id}.1U.fastq"), file("${dataset_id}.2U.fastq") into (unpaired_fastq)
         set dataset_id, file("${dataset_id}.trimmomatic.stats.log") into (trimmomatic_logs)
     
@@ -134,7 +134,7 @@ process AssembleReads {
         set dataset_id, file(forward), file(reverse) from paired_fastq_assembly
     
     output:
-        set dataset_id, file("${dataset_id}.contigs.fa") into (spades_contigs)
+        set dataset_id, file("${dataset_id}.contigs.fa") into (spades_contigs_ariba, spades_contigs_phaster)
         set dataset_id, file("${dataset_id}.graph.fastg") into (spades_graphs)
     
     script:
@@ -149,6 +149,133 @@ process AssembleReads {
     mv output/assembly_graph.fastg ./${dataset_id}.graph.fastg
     """
 }
+
+process FindAribaMarkers {
+    tag { dataset_id }
+    
+    publishDir "${params.output}/AribaFiles", mode: "symlink"
+    
+    input:
+        set dataset_id, file(forward), file(reverse) from paired_fastq_ariba
+    
+    output:
+        set dataset_id, file("${dataset_id}.card.assemblies.fa.gz") into (ariba_card_assemblies)
+        set dataset_id, file("${dataset_id}.megares.assemblies.fa.gz") into (ariba_megares_assemblies)
+        set dataset_id, file("${dataset_id}.plasmidfinder.assemblies.fa.gz") into (ariba_plasmidfinder_assemblies)
+        set dataset_id, file("${dataset_id}.virulencefinder.assemblies.fa.gz") into (ariba_virulencefinder_assemblies)
+        file("${dataset_id}.card.report.tsv") into (ariba_card_reports)
+        file("${dataset_id}.megares.report.tsv") into (ariba_megares_reports)
+        file("${dataset_id}.plasmidfinder.report.tsv") into (ariba_plasmidfinder_reports)
+        file("${dataset_id}.virulencefinder.report.tsv") into (ariba_virulencefinder_reports)
+        
+        """
+        ariba run \
+        --threads ${threads} \
+        /opt/out.card.prepareref \
+        ${forward} \
+        ${reverse} ariba_out_card
+        mv ariba_out_card/assemblies.fa.gz ./${dataset_id}.card.assemblies.fa.gz
+        mv ariba_out_card/report.tsv ./${dataset_id}.card.report.tsv
+        
+        ariba run \
+        --threads ${threads} \
+        /opt/out.megares.prepareref \
+        ${forward} \
+        ${reverse} ariba_out_megares
+        mv ariba_out_megares/assemblies.fa.gz ./${dataset_id}.megares.assemblies.fa.gz
+        mv ariba_out_megares/report.tsv ./${dataset_id}.megares.report.tsv
+        
+        ariba run \
+        --threads ${threads} \
+        /opt/out.plasmidfinder.prepareref \
+        ${forward} \
+        ${reverse} ariba_out_plasmidfinder
+        mv ariba_out_plasmidfinder/assemblies.fa.gz ./${dataset_id}.plasmidfinder.assemblies.fa.gz
+        mv ariba_out_plasmidfinder/report.tsv ./${dataset_id}.plasmidfinder.report.tsv
+        
+        ariba run \
+        --threads ${threads} \
+        /opt/out.virulencefinder.prepareref \
+        ${forward} \
+        ${reverse} ariba_out_virulencefinder
+        mv ariba_out_virulencefinder/assemblies.fa.gz ./${dataset_id}.virulencefinder.assemblies.fa.gz
+        mv ariba_out_virulencefinder/report.tsv ./${dataset_id}.virulencefinder.report.tsv
+        """
+}
+
+process SummarizeAribaReports {
+    tag { "ARIBA Reports" }
+    
+    publishDir "${params.output}/AribaFiles", mode: "symlink"
+    
+    input:
+        file card_reports from ariba_card_reports.toList()
+        file megares_reports from ariba_megares_reports.toList()
+        file plasmidfinder_reports from ariba_plasmidfinder_reports.toList()
+        file virulencefinder_reports from ariba_virulencefinder_reports.toList()
+    output:
+        set file("ariba.card.summary.csv"), file("ariba.megares.summary.csv"), file("ariba.plasmidfinder.summary.csv"), file("ariba.virulencefinder.summary.csv") into (ariba_summary_files)
+    
+    """
+    #!/bin/bash
+    ariba summary ariba.card.summary $card_reports
+    ariba summary ariba.megares.summary $megares_reports
+    ariba summary ariba.plasmidfinder.summary $plasmidfinder_reports
+    ariba summary ariba.virulencefinder.summary $virulencefinder_reports
+    """
+}
+
+process SeparatePlasmidContigs {
+    tag { "SPAdes Assemblies" }
+    
+    publishDir "${params.output}/AssembledFiles", mode: "symlink"
+    
+    input:
+        set dataset_id, file(spades_contigs) from spades_contigs_ariba
+        set dataset_id, file(ariba_plasmid_assemblies) from ariba_plasmidfinder_assemblies
+    output:
+        set dataset_id, file("${dataset_id}.genome.contigs.fa") into (genome_contigs)
+        set dataset_id, file("${dataset_id}.plasmid.contigs.fa") into (plasmid_contigs)
+    
+    """
+    #!/bin/bash
+    if [[ ! -s ${ariba_plasmid_assemblies} ]]; then
+        gzip -d -c > plasmid_unzipped.fa
+        mummer -b $spades_contigs plasmid_unzipped.fa > ${dataset_id}.plasmid.alignment.out
+        separate_plasmid_contigs.py $spades_contigs ${dataset_id}.plasmid.alignment.out ${dataset_id}.plasmid.contigs.fa ${dataset_id}.genome.contigs.fa
+    else
+        touch ${dataset_id}.plasmid.contigs.fa
+        cp $spades_contigs ${dataset_id}.genome.contigs.fa
+    fi
+    """
+}
+
+if( params.phage ) {
+    process FindPhages {
+        tag { dataset_id }
+        
+        input:
+            set dataset_id, file(spades_contigs) from spades_contigs_phaster
+        output:
+            set dataset_id, file("${dataset_id}.phaster.results.zip") into phaster_results
+        
+        """
+        mkdir temp_in
+        mkdir temp_out
+        
+        cp $spades_contigs temp_in/query.fa
+        phaster_query.py temp_in temp_out
+        mv temp_out/zipfiles/*.zip ./${dataset_id}.phaster.results.zip
+        
+        rm temp_in/*
+        rmdir temp_in
+        rmdir temp_out/zipfiles
+        rm temp_out/*
+        rmdir temp_out
+        """
+    }
+}
+
 
 def nextflow_version_error() {
     println ""
@@ -214,6 +341,7 @@ def help() {
     println "    --threads       INT      number of threads to use for each process"
     println "    --ploidy        INT      genome copy number"
     println "    --min-alt-count INT      requires this number of observations supporting an alternate allele"
+    println "    --phage         FLAG     query assemblies to find phages, false by default"
     println ""
     println "Help options:"
     println ""

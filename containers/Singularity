@@ -3,9 +3,13 @@ From: debian:jessie-slim
 
 
 %files
-    ../data/databases/Salmonella.tar.xz /opt
-    ../data/databases/Plasmid.tar.xz /opt
-    ../data/databases/Efaecalis.tar.xz /opt
+    data/databases/Salmonella.tar.xz /opt
+    data/databases/Plasmid.tar.xz /opt
+    data/databases/Efaecalis.tar.xz /opt
+    data/databases/out.card.prepareref /opt
+    data/databases/out.megares.prepareref /opt
+    data/databases/out.plasmidfinder.prepareref /opt
+    data/databases/out.virulencefinder.prepareref /opt
 
 
 %post
@@ -40,12 +44,27 @@ From: debian:jessie-slim
     libdigest-md5-perl \
     bioperl \
     xz-utils \
+    bowtie2 \
+    mummer \
+    cd-hit \
     && apt-get update \
     && rm -rf /var/lib/apt/lists/*
     pip3 install requests
+    pip3 install ariba
     pip install multiqc=="1.0"
     cd /usr/local/bin
     ln -s /usr/lib/jvm/java-7-openjdk-amd64/bin/java ./java
+    cd /
+    CDHIT_SOURCE="cd-hit-v4.6.8-2017-1208-source.tar.gz"
+    CDHIT_VERSION="4.6.8"
+    CDHIT_DIR="cd-hit-v4.6.8-2017-1208"
+    cd /opt
+    wget https://github.com/weizhongli/cdhit/releases/download/V$CDHIT_VERSION/$CDHIT_SOURCE
+    tar -xzvf $CDHIT_SOURCE
+    cd $CDHIT_DIR
+    make
+    make install
+    rm /opt/$CDHIT_SOURCE
     cd /
     BEDTOOLS2_SOURCE="bedtools-2.26.0.tar.gz" \
     BEDTOOLS2_VERSION="2.26.0" \
@@ -119,11 +138,11 @@ From: debian:jessie-slim
     && ln -s /opt/samtools-$SAMTOOLS_VERSION/$SAMTOOLS_BIN $SAMTOOLS_DEST \
     && rm /opt/$SAMTOOLS_SOURCE
     cd /
-    SPADES_SOURCE="SPAdes-3.10.1-Linux.tar.gz" \
-    SPADES_VERSION="3.10.1" \
+    SPADES_SOURCE="SPAdes-3.11.1-Linux.tar.gz" \
+    SPADES_VERSION="3.11.1" \
     SPADES_BIN="bin/spades.py" \
     SPADES_DEST="/usr/local/bin/spades.py"
-    wget https://github.com/ablab/spades/releases/download/v$SPADES_VERSION/$SPADES_SOURCE -O /opt/$SPADES_SOURCE \
+    wget http://cab.spbu.ru/files/release$SPADES_VERSION/$SPADES_SOURCE -O /opt/$SPADES_SOURCE \
     && tar -xvf /opt/$SPADES_SOURCE -C /opt \
     && cd /opt/SPAdes-$SPADES_VERSION-Linux \
     && ln -s /opt/SPAdes-$SPADES_VERSION-Linux/$SPADES_BIN $SPADES_DEST \
