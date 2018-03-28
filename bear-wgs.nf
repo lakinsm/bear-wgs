@@ -240,7 +240,7 @@ process SeparatePlasmidContigs {
     """
     #!/bin/bash
     if [[ ! -s ${ariba_plasmid_assemblies} ]]; then
-        gzip -d -c > plasmid_unzipped.fa
+        gzip -d -c $ariba_plasmid_assemblies > plasmid_unzipped.fa
         mummer -b $spades_contigs plasmid_unzipped.fa > ${dataset_id}.plasmid.alignment.out
         separate_plasmid_contigs.py $spades_contigs ${dataset_id}.plasmid.alignment.out ${dataset_id}.plasmid.contigs.fa ${dataset_id}.genome.contigs.fa
     else

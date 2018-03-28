@@ -39,6 +39,7 @@ From: debian:jessie-slim
     pkg-config \
     dh-autoreconf \
     tabix \
+    perl \
     libdatetime-perl \
     libxml-simple-perl \
     libdigest-md5-perl \
@@ -47,7 +48,6 @@ From: debian:jessie-slim
     bowtie2 \
     mummer \
     cd-hit \
-    && apt-get update \
     && rm -rf /var/lib/apt/lists/*
     pip3 install requests
     pip3 install ariba
