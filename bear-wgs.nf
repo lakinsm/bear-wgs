@@ -23,7 +23,15 @@ if( params.fqc_adapters ) {
     if( !fqc_adapters.exists() ) return fastqc_error(fqc_adapters)
 }
 
+/*
+if( params.db ) {
+    db = params.db
+    if(
+}
+*/
+
 threads = params.threads
+db = params.db
 
 // Trimmomatic options
 leading = params.leading
@@ -118,7 +126,8 @@ process AlignReadsToGenome {
         file ref_index from index.first()
     
     output:
-        set dataset_id, file("${dataset_id}.aligned.sam") into genome_sam
+        set dataset_id, file("${dataset_id}.aligned.sam") into prokka_sam
+        set dataset_id, file("${dataset_id}.aligned.sam") into freebayes_sam
     
     """
     bwa mem genome.index ${forward} ${reverse} -t ${threads} > ${dataset_id}.aligned.sam
@@ -136,6 +145,7 @@ process AssembleReads {
     output:
         set dataset_id, file("${dataset_id}.contigs.fa") into (spades_contigs_ariba, spades_contigs_phaster)
         set dataset_id, file("${dataset_id}.graph.fastg") into (spades_graphs)
+        set dataset_id, file("${dataset_id}.contigs.paths") into (spades_paths)
     
     script:
     """
@@ -147,6 +157,7 @@ process AssembleReads {
         -o output
     mv output/contigs.fasta ./${dataset_id}.contigs.fa
     mv output/assembly_graph.fastg ./${dataset_id}.graph.fastg
+    mv output/contigs.paths ./${dataset_id}.contigs.paths
     """
 }
 
@@ -257,7 +268,7 @@ if( params.phage ) {
         input:
             set dataset_id, file(spades_contigs) from spades_contigs_phaster
         output:
-            set dataset_id, file("${dataset_id}.phaster.results.zip") into phaster_results
+            set dataset_id, file("${dataset_id}.phaster.results.zip") into (phaster_results)
         
         """
         mkdir temp_in
@@ -274,6 +285,65 @@ if( params.phage ) {
         rmdir temp_out
         """
     }
+}
+
+\*
+// Need to generate consensus here for prokka
+process AnnotateGenomeAlignments {
+    tag { dataset_id }
+    
+    publishDir "${params.output}/AnnotatedGenomeAlignments", mode: "symlink"
+    
+    input:
+        set dataset_id, file(sam_file) from prokka_sam
+    output:
+        set dataset_id, file("${dataset_id}.*") into (annotated_genome_alignments)
+    
+    """
+    #!/bin/bash
+    prokka --outdir annotations --usegenus --genus $db --cpus $threads --prefix ${dataset_id}.alignment $sam_file
+    mv annotations/* .
+    """
+}
+\*
+
+process AnnotateGenomeAssemblies {
+    tag { dataset_id }
+    
+    publishDir "${params.output}/AnnotatedGenomeAssemblies", mode: "symlink"
+    
+    input:
+        set dataset_id, file(genome_contig_file) from genome_contigs
+    output:
+        set dataset_id, file("${dataset_id}.*") into (annotated_genome_assemblies)
+    
+    """
+    #!/bin/bash
+    prokka --outdir annotations --usegenus --genus $db --cpus $threads --prefix ${dataset_id}.genome $genome_contig_file
+    mv annotations/* .
+    """
+}
+
+process AnnotatePlasmidAssemblies {
+    tag { "Plasmid Contigs" }
+    
+    publishDir "${params.output}/AnnotatedPlasmidAssemblies", mode: "symlink"
+    
+    input:
+        set dataset_id, file(plasmid_contig_file) from plasmid_contigs
+    output:
+        set dataset_id, file("${dataset_id}.*") into (annotated_plasmid_assemblies)
+    
+    """
+    #!/bin/bash
+    if [[ -s ${plasmid_contig_file} ]]; then
+        cat $plasmid_contig_file
+        prokka --outdir annotations --usegenus --genus Plasmid --cpus $threads --prefix ${dataset_id}.plasmid $plasmid_contig_file
+        mv annotations/* .
+    else
+        touch ${dataset_id}.empty.no.annotations
+    fi
+    """
 }
 
 
@@ -313,6 +383,15 @@ def reference_error(def input) {
     return 1
 }
 
+/*
+def db_error(def input) {
+    println ""
+    println "[params.db] invalid argument: '" + db "' : Choose one of [Salmonella, Efaecalis]"
+    println ""
+    return 1
+}
+*/
+
 def help() {
     println ""
     println "Program: bear-wgs"
@@ -328,6 +407,7 @@ def help() {
     println "    --adapters      STR      path to FASTA formatted adapter sequences"
     println "    --reference     STR      path to reference genome FASTA file"
     println "    --output        STR      directory to write process outputs to"
+    println "    --db            STR      database to use for annotation [Salmonella, Efaecalis]"
     println ""
     println "Trimming options:"
     println ""

@@ -1,6 +1,13 @@
 Usage
 -----
 
+### Quick Start Example
+
+To run against a Salmonella database with approximately 16 threads:
+```
+nextflow bear-wgs.nf -w "/path/to/working/directory" --reference "./containers/data/references/CP016573.1_Salmonella_Heidelberg.fasta" --output "/path/to/output/folder" --threads 4 --ploidy 1 --db Salmonella -resume
+```
+
 ### Display Help Message
 
 The `help` parameter displays the available options and commands.
@@ -15,20 +22,6 @@ $ nextflow run auir.nf --help
 The `reads` parameter accepts sequence files in standard fastq and gz format.
 ```
 $ nextflow run auir.nf --reads "data/raw/*_R{1,2}.fastq"
-```
-
-#### Set host genome
-
-The `host` parameter accepts a fasta formatted host genome.
-```
-$ nextflow run auir.nf --reads "data/raw/*_R{1,2}.fastq" --host "data/host/gallus.fa"
-```
-
-#### Set host index
-
-The `index` parameter allows you to upload pre-built host indexes produced by BWA.
-```
-$ nextflow run auir.nf --reads "data/raw/*_R{1,2}.fastq" --host "data/host/gallus.fa" --index "data/index/*"
 ```
 
 ### File Outputs

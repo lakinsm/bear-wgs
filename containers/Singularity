@@ -48,6 +48,7 @@ From: debian:jessie-slim
     bowtie2 \
     mummer \
     cd-hit \
+    less \
     && rm -rf /var/lib/apt/lists/*
     pip3 install requests
     pip3 install ariba
