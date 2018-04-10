@@ -57,62 +57,62 @@ params {
 process {
     $FastQC {
         maxForks = 8
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $QualityControl {
         maxForks = 8
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $BuildReferenceIndex {
         maxForks = 1
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $AlignReadsToGenome {
         maxForks = 4
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $AssembleReads {
         maxForks = 4
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $FindAribaMarkers {
         maxForks = 4
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $SummarizeAribaReports {
         maxForks = 1
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $SeparatePlasmidContigs {
         maxForks = 8
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $FindPhages {
         maxForks = 1
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $AnnotateGenomeAlignments {
         maxForks = 4
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $AnnotateGenomeAssemblies {
         maxForks = 4
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
     
     $AnnotatePlasmidAssemblies {
         maxForks = 4
-        container = 'shub://lakinsm/bear-wgs:latest'
+        container = 'containers/recipes/bear-wgs.simg'
     }
 }
 
