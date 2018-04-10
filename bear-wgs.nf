@@ -287,7 +287,7 @@ if( params.phage ) {
     }
 }
 
-\*
+/*
 // Need to generate consensus here for prokka
 process AnnotateGenomeAlignments {
     tag { dataset_id }
@@ -305,7 +305,7 @@ process AnnotateGenomeAlignments {
     mv annotations/* .
     """
 }
-\*
+*/
 
 process AnnotateGenomeAssemblies {
     tag { dataset_id }
