@@ -144,20 +144,19 @@ process AssembleReads {
     
     output:
         set dataset_id, file("${dataset_id}.contigs.fa") into (spades_contigs_ariba, spades_contigs_phaster)
-        set dataset_id, file("${dataset_id}.graph.fastg") into (spades_graphs)
-        set dataset_id, file("${dataset_id}.contigs.paths") into (spades_paths)
+        set dataset_id, file("${dataset_id}.gfa") into (spades_graphs)
+        set dataset_id, file("${dataset_id}.unicycler.log") into (spades_paths)
     
     script:
     """
-    spades.py \
+    unicycler
         -t ${threads} \
-        --cov-cutoff auto \
         -1 ${forward} \
         -2 ${reverse} \
         -o output
-    mv output/contigs.fasta ./${dataset_id}.contigs.fa
-    mv output/assembly_graph.fastg ./${dataset_id}.graph.fastg
-    mv output/contigs.paths ./${dataset_id}.contigs.paths
+    mv output/assembly.fasta ./${dataset_id}.contigs.fa
+    mv output/assembly.gfa ./${dataset_id}.gfa
+    mv output/unicycler.log ./${dataset_id}.unicycler.log
     """
 }
 
@@ -253,7 +252,7 @@ process SeparatePlasmidContigs {
     if [[ ! -s ${ariba_plasmid_assemblies} ]]; then
         gzip -d -c $ariba_plasmid_assemblies > plasmid_unzipped.fa
         mummer -b $spades_contigs plasmid_unzipped.fa > ${dataset_id}.plasmid.alignment.out
-        separate_plasmid_contigs.py $spades_contigs ${dataset_id}.plasmid.alignment.out ${dataset_id}.plasmid.contigs.fa ${dataset_id}.genome.contigs.fa
+        separate_plasmid_contigs.py $spades_contigs ${dataset_id}.plasmid.alignment.out ${dataset_id}.plasmid.contigs.fa ${dataset_id}.genome.contigs.fa 1
     else
         touch ${dataset_id}.plasmid.contigs.fa
         cp $spades_contigs ${dataset_id}.genome.contigs.fa
@@ -407,7 +406,7 @@ def help() {
     println "    --adapters      STR      path to FASTA formatted adapter sequences"
     println "    --reference     STR      path to reference genome FASTA file"
     println "    --output        STR      directory to write process outputs to"
-    println "    --db            STR      database to use for annotation [Salmonella, Efaecalis]"
+    println "    --db            STR      database to use for annotation [Salmonella, Efaecalis, Ecoli]"
     println ""
     println "Trimming options:"
     println ""

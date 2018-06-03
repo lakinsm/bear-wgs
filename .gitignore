@@ -6,3 +6,4 @@ containers/recipes/*
 .nextflow/*
 .nextflow*
 work/*
+nextflow.config.local

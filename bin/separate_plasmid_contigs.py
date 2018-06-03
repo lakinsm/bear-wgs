@@ -4,7 +4,7 @@ import sys
 import re
 
 
-length_regex = re.compile(r'length_(\d+)_')
+length_regex = re.compile(r'length=(\d+)')
 
 
 def parse_fasta(infile):
@@ -62,5 +62,5 @@ def separate_contigs(S, A, plasmid_out, contig_out):
 
 if __name__ == '__main__':
     spades = {k: v for k, v in parse_fasta(sys.argv[1])}
-    alignments = parse_mummer_out(sys.argv[2], sys.argv[5])
+    alignments = parse_mummer_out(sys.argv[2], int(sys.argv[5]))
     separate_contigs(spades, alignments, sys.argv[3], sys.argv[4])
