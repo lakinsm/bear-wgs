@@ -149,11 +149,7 @@ process AssembleReads {
     
     script:
     """
-    unicycler
-        -t ${threads} \
-        -1 ${forward} \
-        -2 ${reverse} \
-        -o output
+    unicycler -1 ${forward} -2 ${reverse} -o output -t ${threads}
     mv output/assembly.fasta ./${dataset_id}.contigs.fa
     mv output/assembly.gfa ./${dataset_id}.gfa
     mv output/unicycler.log ./${dataset_id}.unicycler.log
@@ -250,9 +246,12 @@ process SeparatePlasmidContigs {
     """
     #!/bin/bash
     if [[ ! -s ${ariba_plasmid_assemblies} ]]; then
-        gzip -d -c $ariba_plasmid_assemblies > plasmid_unzipped.fa
-        mummer -b $spades_contigs plasmid_unzipped.fa > ${dataset_id}.plasmid.alignment.out
-        separate_plasmid_contigs.py $spades_contigs ${dataset_id}.plasmid.alignment.out ${dataset_id}.plasmid.contigs.fa ${dataset_id}.genome.contigs.fa 1
+        zcat $ariba_plasmid_assemblies > plasmid_unzipped.fa
+        fix_contig_headers.py $spades_contigs > temp_genome.contigs.fa
+        mummer -b temp_genome.contigs.fa plasmid_unzipped.fa > ${dataset_id}.plasmid.alignment.out
+        separate_plasmid_contigs.py temp_genome.contigs.fa ${dataset_id}.plasmid.alignment.out ${dataset_id}.plasmid.contigs.fa ${dataset_id}.genome.contigs.fa 1
+        rm temp_genome.contigs.fa
+        rm plasmid_unzipped.fa
     else
         touch ${dataset_id}.plasmid.contigs.fa
         cp $spades_contigs ${dataset_id}.genome.contigs.fa

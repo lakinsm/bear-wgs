@@ -41,11 +41,14 @@ def parse_mummer_out(infile, minlen):
         contig_name = ""
         contig_len = 0
         for line in data:
+            if not line:
+                continue
             if line.startswith('>'):
-                contig_name = line.split()[1]
-                contig_len = length_regex.search(line).group(1)
                 continue
             else:
+                contig_name = line.split()[0]
+                print(contig_name)
+                contig_len = int(length_regex.search(line).group(1))
                 if contig_len > minlen:
                     ret.add(contig_name)
     return ret
