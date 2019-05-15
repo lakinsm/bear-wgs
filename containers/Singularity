@@ -202,4 +202,10 @@ From: debian:jessie-slim
     cd Unicycler
     python3 setup.py install
     cd /
-
+    cd /opt
+    wget https://github.com/broadinstitute/gatk/releases/download/4.0.8.1/gatk-4.0.8.1.zip
+    unzip gatk-4.0.8.1.zip
+    cd /usr/local/bin
+    ln -s /opt/gatk-4.0.8.1/gatk
+    cd /
+    

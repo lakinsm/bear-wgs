@@ -4,9 +4,6 @@ if( params.help ) {
     return help()
 }
 
-if( !nextflow.version.matches('0.25+') ) {
-    return nextflow_version_error()
-}
 
 if( params.reference ) {
     reference = file(params.reference)
@@ -245,7 +242,7 @@ process SeparatePlasmidContigs {
     
     """
     #!/bin/bash
-    if [[ ! -s ${ariba_plasmid_assemblies} ]]; then
+    if [[ -s ${ariba_plasmid_assemblies} ]]; then
         zcat $ariba_plasmid_assemblies > plasmid_unzipped.fa
         fix_contig_headers.py $spades_contigs > temp_genome.contigs.fa
         mummer -b temp_genome.contigs.fa plasmid_unzipped.fa > ${dataset_id}.plasmid.alignment.out
@@ -299,7 +296,7 @@ process AnnotateGenomeAlignments {
     
     """
     #!/bin/bash
-    prokka --outdir annotations --usegenus --genus $db --cpus $threads --prefix ${dataset_id}.alignment $sam_file
+    prokka --outdir annotations --usegenus --genus $db --cpus $threads --prefix ${dataset_id}.alignment --centre x --compliant $sam_file
     mv annotations/* .
     """
 }
@@ -317,7 +314,7 @@ process AnnotateGenomeAssemblies {
     
     """
     #!/bin/bash
-    prokka --outdir annotations --usegenus --genus $db --cpus $threads --prefix ${dataset_id}.genome $genome_contig_file
+    prokka --outdir annotations --usegenus --genus $db --cpus $threads --prefix ${dataset_id}.genome --centre x --compliant $genome_contig_file
     mv annotations/* .
     """
 }

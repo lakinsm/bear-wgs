@@ -7,3 +7,7 @@ containers/recipes/*
 .nextflow*
 work/*
 nextflow.config.local
+
+#Index files
+containers/data/references/*.fai
+containers/data/references/*.dict
